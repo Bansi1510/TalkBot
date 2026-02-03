@@ -1,1 +1,13 @@
 @import "tailwindcss";
+@import "react-toastify/dist/ReactToastify.css";
+
+/* Remove default password eye icon (Chrome, Edge, Safari) */
+input[type="password"]::-webkit-textfield-decoration-container {
+  display: none;
+}
+
+/* Remove password eye icon (Microsoft Edge / IE) */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}

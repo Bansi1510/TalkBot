@@ -6,6 +6,7 @@ import { genToken } from "../config/token.js";
 
 export const signUp = async (req: Request, res: Response) => {
   try {
+
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
       return res.status(401).json({
@@ -14,7 +15,9 @@ export const signUp = async (req: Request, res: Response) => {
       })
     }
     const existUser = await User.find({ email });
-    if (existUser) {
+
+    if (existUser.length > 0) {
+
       return res.status(400).json({
         success: false,
         message: "These Email is already registed"
