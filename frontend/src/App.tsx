@@ -5,7 +5,7 @@ import Login from './components/auth/Login'
 import Home from './components/pages/Home'
 import { UserContext } from './context/userContext'
 import Customize from './components/pages/Customize'
-
+import InputName from './components/Customize/InputName'
 
 const App: React.FC = () => {
   const context = useContext(UserContext);
@@ -22,6 +22,8 @@ const App: React.FC = () => {
         <Route path='/signup' element={!user ? <Signup /> : <Navigate to={"/"} />} />
         <Route path='/login' element={!user ? <Login /> : <Navigate to={"/"} />} />
         <Route path='/customize' element={user ? <Customize /> : <Login />} />
+        <Route path='/ass-name' element={user ? <InputName /> : <Login />} />
+
       </Routes>
     </>
   )
