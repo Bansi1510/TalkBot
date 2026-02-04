@@ -16,4 +16,6 @@ export interface UserContextType {
   setUser: (user: User | null) => void;
   isAuthenticated: boolean;
   loading: boolean
+  selectedImage: string | null,
+  setSelectedImage: (selectedImage: string | null) => void
 }

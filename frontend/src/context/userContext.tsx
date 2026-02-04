@@ -8,6 +8,7 @@ export const UserContext = createContext<UserContextType | undefined>(undefined)
 export const UserContextProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const navigate = useNavigate();
   useEffect(() => {
     const fetchUser = async () => {
@@ -30,6 +31,8 @@ export const UserContextProvider: React.FC<UserProviderProps> = ({ children }) =
         setUser,
         loading,
         isAuthenticated: !!user,
+        selectedImage,
+        setSelectedImage
 
       }}
     >
