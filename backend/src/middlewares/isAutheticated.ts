@@ -1,5 +1,13 @@
 import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
+
+declare global {
+  namespace Express {
+    interface Request {
+      userId?: string | number;
+    }
+  }
+}
 
 const JWT = process.env.JWT;
 if (!JWT) {
@@ -13,11 +21,13 @@ const isAutheticated = async (req: Request, res: Response, next: NextFunction) =
         success: false,
         message: "please login frist"
       })
+      return;
     }
-    const verifyToken = await jwt.verify(token, JWT);
-
+    const verifyToken = await jwt.verify(token, JWT) as JwtPayload;
+    req.userId = verifyToken.userId;
+    next();
   } catch (error: unknown) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "authetication failed"
     })

@@ -3,7 +3,7 @@ import axios, { AxiosError } from "axios";
 import { toast } from "react-toastify";
 
 const API = axios.create({
-  baseURL: `http://localhost:2211/api/user/`,
+  baseURL: `http://localhost:2211/api/auth/`,
   withCredentials: true
 })
 
