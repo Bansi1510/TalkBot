@@ -18,4 +18,8 @@ export interface UserContextType {
   loading: boolean
   selectedImage: string | null,
   setSelectedImage: (selectedImage: string | null) => void
+  assistantName: string | null;
+  setAssistantName: (assistantName: string | null) => void
+  uploadedFile: File | null;
+  setUploadedFile: (uploadedFile: File | null) => void
 }

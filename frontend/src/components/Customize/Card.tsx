@@ -8,6 +8,7 @@ interface ImageCardProps {
 }
 
 const Card: React.FC<ImageCardProps> = ({ img, isSelected, onSelect }) => {
+
   return (
     <div
       onClick={onSelect}

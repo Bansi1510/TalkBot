@@ -3,7 +3,7 @@ import { UploadCloud } from "lucide-react";
 
 interface UploadImageCardProps {
   isSelected: boolean;
-  onSelect: (image: string) => void;
+  onSelect: (file: File, previewUrl: string) => void;
 }
 
 const UploadImageCard: React.FC<UploadImageCardProps> = ({
@@ -17,9 +17,10 @@ const UploadImageCard: React.FC<UploadImageCardProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const imageUrl = URL.createObjectURL(file);
-    setPreview(imageUrl);
-    onSelect(imageUrl);
+    const previewUrl = URL.createObjectURL(file);
+
+    setPreview(previewUrl);
+    onSelect(file, previewUrl);
   };
 
   return (

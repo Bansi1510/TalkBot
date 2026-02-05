@@ -20,8 +20,26 @@ export const getUserAPI = async (): Promise<User | null> => {
     }
   } catch (error: unknown) {
     const axiosErr = error as AxiosError<{ message?: string }>;
-    const msg = axiosErr.response?.data?.message || "Login Error";
+    const msg = axiosErr.response?.data?.message || "get user Error";
     toast.error(msg);
     return null
+  }
+}
+
+export const updateAssistantAPI = async (formData: FormData): Promise<User | null> => {
+  try {
+    const res = await API.post("update", formData);
+    if (res.data.success) {
+      console.log(res.data.user);
+      return res.data.user;
+    } else {
+      toast.error(res.data.message);
+      return null;
+    }
+  } catch (error: unknown) {
+    const axiosErr = error as AxiosError<{ message?: string }>;
+    const msg = axiosErr.response?.data?.message || "update assistant Error";
+    toast.error(msg);
+    return null;
   }
 }

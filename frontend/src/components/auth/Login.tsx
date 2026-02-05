@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import bg from "../../assets/authBg.png";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 import "react-toastify/dist/ReactToastify.css";
 import { loginAPI } from "../../../APIs/auth.api";
+import { UserContext } from "../../context/userContext";
 
 
 const Login: React.FC = () => {
@@ -14,12 +15,22 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error("login  must be used within UserContext")
+  }
+  const { setUser } = context;
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await loginAPI(email, password);
-    setLoading(false)
+    const data = await loginAPI(email, password);
+    if (!data) {
+      setLoading(false);
+      return;
+    }
+    setUser(data);
+    setLoading(false);
+    navigate("/")
 
   };
 
