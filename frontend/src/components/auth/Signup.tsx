@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import bg from "../../assets/authBg.png";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { signUpAPI } from "../../../APIs/auth.api"
+import { UserContext } from "../../context/userContext";
 
 const Signup: React.FC = () => {
   const navigate = useNavigate();
@@ -13,11 +14,22 @@ const Signup: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error("Sign up  must be used within UserContext");
+  }
+  const { setUser } = context
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    await signUpAPI(name, email, password);
+    const data = await signUpAPI(name, email, password);
+    if (!data) {
+      setLoading(false)
+      return;
+    }
+    setUser(data)
     setLoading(false)
+    navigate("/")
   };
 
   return (

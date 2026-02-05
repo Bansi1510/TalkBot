@@ -9,14 +9,16 @@ export const UserContextProvider: React.FC<UserProviderProps> = ({ children }) =
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const navigate = useNavigate();
+  const [assistantName, setAssistantName] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
   useEffect(() => {
     const fetchUser = async () => {
       const res = await getUserAPI();
       console.log(res)
       if (res) {
         setUser(res);
-        navigate("/customize")
+
       }
       setLoading(false)
     };
@@ -32,7 +34,11 @@ export const UserContextProvider: React.FC<UserProviderProps> = ({ children }) =
         loading,
         isAuthenticated: !!user,
         selectedImage,
-        setSelectedImage
+        setSelectedImage,
+        assistantName,
+        setAssistantName,
+        uploadedFile,
+        setUploadedFile
 
       }}
     >

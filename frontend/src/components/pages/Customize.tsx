@@ -4,6 +4,7 @@ import Card from "../Customize/Card"
 import UploadImageCard from "../Customize/UploadImageCard";
 import { UserContext } from "../../context/userContext";
 import { useNavigate } from "react-router-dom";
+import { FiArrowLeft } from "react-icons/fi";
 
 const Customize: React.FC = () => {
   const context = useContext(UserContext);
@@ -13,9 +14,25 @@ const Customize: React.FC = () => {
     throw new Error("Customize must be used within UserContext");
   }
 
-  const { selectedImage, setSelectedImage } = context;
+  const { selectedImage, setSelectedImage, setUploadedFile } = context;
+
+
   return (
     <div className="min-h-screen w-full bg-linear-to-br from-black via-blue-950 to-black flex items-center justify-center px-4">
+      <button
+        onClick={() => navigate("/")}
+        className="
+                absolute top-6 left-6
+                p-2 rounded-full
+                text-white bg-black/50
+                hover:bg-blue-600/30
+                hover:scale-110
+                transition-all duration-300
+              "
+        aria-label="Go back"
+      >
+        <FiArrowLeft size={22} />
+      </button>
       <div className="w-full max-w-5xl bg-black/60 backdrop-blur-md rounded-2xl shadow-2xl border border-blue-900 p-8">
 
         <div className="text-center mb-10">
@@ -33,14 +50,22 @@ const Customize: React.FC = () => {
               key={img.id}
               img={img}
               isSelected={selectedImage === img.src}
-              onSelect={() => setSelectedImage(img.src)}
+              onSelect={() => {
+                setSelectedImage(img.src);
+                setUploadedFile(null);
+              }
+
+              }
             />
 
           ))}
 
           <UploadImageCard
             isSelected={!!selectedImage && selectedImage.startsWith("blob:")}
-            onSelect={setSelectedImage}
+            onSelect={(file, previewUrl) => {
+              setUploadedFile(file);
+              setSelectedImage(previewUrl);
+            }}
           />
         </div>
         {selectedImage && (
