@@ -22,4 +22,12 @@ export interface UserContextType {
   setAssistantName: (assistantName: string | null) => void
   uploadedFile: File | null;
   setUploadedFile: (uploadedFile: File | null) => void
+  askToAssistant: (command: string) => void;
+}
+
+export interface GeminiResponse {
+  success: boolean
+  type: string
+  userInput: string
+  ans: string
 }
