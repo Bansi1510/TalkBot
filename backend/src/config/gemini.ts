@@ -105,4 +105,3 @@ User Input: "${prompt}"
 }
 
 export default geminiRes
-""

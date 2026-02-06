@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import User from '../models/user.model.js';
 import uploadImage from '../config/cloudinary.js';
 import geminiRes from '../config/gemini.js';
+import moment from 'moment';
 
 
 export const getUser = async (req: Request, res: Response) => {
@@ -81,7 +82,49 @@ export const askToAssistant = async (req: Request, res: Response) => {
     }
     const ans = JSON.parse(matchJSON[0]);
     const type = ans.type;
+    switch (type) {
+      case "get_date": {
+        return res.status(200).json({
+          success: true,
+          type: "get_date",
+          userInput: ans.userinput,
+          ans: `current date is ${moment().format('YYYY-MM-DD')}`
+        });
+      }
+      case "get_time": {
+        return res.status(200).json({
+          success: true,
+          type: "get_time",
+          userInput: ans.userinput,
+          ans: `current time is ${moment().format('hh:mm A')}`
+        });
+      }
+      case "get_day": {
+        return res.status(200).json({
+          success: true,
+          type: "get_time",
+          userInput: ans.userinput,
+          ans: `current  day is ${moment().format('dddd')}`
+        });
+      }
+      case "get_month": {
+        return res.status(200).json({
+          success: true,
+          type: "get_time",
+          userInput: ans.userinput,
+          ans: `current month  is ${moment().format('MMMM')}`
+        });
 
+      }
+      default: {
+        return res.status(200).json({
+          success: true,
+          type,
+          userInput: ans.userinput,
+          ans: result
+        });
+      }
+    }
   } catch (error: unknown) {
     console.log(error);
     return res.status(500).json({

@@ -1,7 +1,6 @@
 import React, { createContext, useEffect, useState } from "react";
 import type { User, UserContextType, UserProviderProps } from "../types";
-import { getUserAPI } from "../../APIs/user.api";
-import { useNavigate } from "react-router-dom";
+import { askToAssistantAPI, getUserAPI } from "../../APIs/user.api";
 
 export const UserContext = createContext<UserContextType | undefined>(undefined);
 
@@ -25,6 +24,13 @@ export const UserContextProvider: React.FC<UserProviderProps> = ({ children }) =
     fetchUser();
   }, []);
 
+  const askToAssistant = async (command: string) => {
+    const res = await askToAssistantAPI(command);
+    if (!res) {
+      return;
+    }
+    console.log(res);
+  }
 
   return (
     <UserContext.Provider
@@ -38,7 +44,8 @@ export const UserContextProvider: React.FC<UserProviderProps> = ({ children }) =
         assistantName,
         setAssistantName,
         uploadedFile,
-        setUploadedFile
+        setUploadedFile,
+        askToAssistant
 
       }}
     >
