@@ -25,11 +25,13 @@ export const UserContextProvider: React.FC<UserProviderProps> = ({ children }) =
   }, []);
 
   const askToAssistant = async (command: string) => {
+
     const res = await askToAssistantAPI(command);
+    console.log(res)
     if (!res) {
-      return;
+      return null;
     }
-    console.log(res);
+    return res;
   }
 
   return (

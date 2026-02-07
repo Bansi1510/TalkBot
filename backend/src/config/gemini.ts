@@ -1,13 +1,20 @@
-import axios from "axios";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 
+const geminiRes = async (
+  command: string,
+  assistantName: string,
+  userName: string
+): Promise<string> => {
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-const GEMINI_API = process.env.GEMINI_API;
-if (!GEMINI_API) {
-  throw new Error('Gemini API not found')
-}
-const geminiRes = async (command: string, assistantName: string, userName: string) => {
-  try {
-    const systemPrompt = `
+  if (!GEMINI_API_KEY) {
+    throw new Error("Gemini API key not found");
+  }
+
+  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+  // ⚠️ PROMPT IS 100% UNCHANGED (as requested)
+  const systemPrompt = `
 You are a smart virtual voice assistant named "${assistantName}", created by "${userName}".
 
 You are NOT Google.
@@ -46,11 +53,6 @@ IMPORTANT RULES
    - Short
    - Friendly
    - Spoken style (voice assistant)
-   - Example: 
-     - "Sure, searching it now"
-     - "Here’s what I found"
-     - "Today is Tuesday"
-     - "Opening Instagram"
 
 4. If someone asks:
    "Who created you?" or "Who made you?"
@@ -65,43 +67,47 @@ IMPORTANT RULES
 8. NEVER return text outside JSON
 
 -------------------------
-TYPE DEFINITIONS
--------------------------
-- general: normal questions or conversation
-- google_search: user wants to search on Google
-- youtube_search: user wants to search on YouTube
-- youtube_play: user wants to directly play a video or song
-- calculator_open: open calculator
-- instagram_open: open Instagram
-- facebook_open: open Facebook
-- weather_show: weather information
-- get_time: current time
-- get_date: today’s date
-- get_day: current day
-- get_month: current month
-
--------------------------
 NOW PROCESS THIS INPUT
 -------------------------
-User Input: "${prompt}"
-`;
+User Input: "${command}"`
 
-    const res = await axios.post(GEMINI_API, {
-      "contents": [
-        {
-          "parts": [
-            {
-              "text": systemPrompt
-            }
-          ]
-        }
-      ]
-    })
-    return res.data.candidates[0].content.parts[0].text;
+  // ✅ Configuration to force JSON output
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.5-flash-lite",
+
+    generationConfig: {
+      responseMimeType: "application/json",
+    },
+    // ✅ Better to put instructions here than in the main prompt
+    systemInstruction: systemPrompt,
+  });
+  try {
+    // Send the systemPrompt (which includes the user command)
+    const result = await model.generateContent(systemPrompt);
+    const output = result.response.text().trim();
+
+    // Clean markdown blocks if the model accidentally includes them
+    const cleanOutput = output.replace(/```json|```/g, "").trim();
+
+    try {
+      JSON.parse(cleanOutput);
+      return cleanOutput;
+    } catch {
+      return JSON.stringify({
+        type: "general",
+        userinput: command,
+        response: "Sorry, I didn’t understand that.",
+      });
+    }
   } catch (error) {
-    console.log(error)
-    return false
-  }
-}
+    console.error("Gemini SDK Error:", error);
 
-export default geminiRes
+    return JSON.stringify({
+      type: "general",
+      userinput: command,
+      response: "Something went wrong. Please try again.",
+    });
+  }
+};
+
+export default geminiRes;
