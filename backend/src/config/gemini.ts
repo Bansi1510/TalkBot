@@ -67,7 +67,7 @@ IMPORTANT RULES
 7. NEVER add extra keys
 8. NEVER return text outside JSON`;
 
-  // Model configuration
+
   const model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash-lite",
 
@@ -79,11 +79,11 @@ IMPORTANT RULES
   });
 
   try {
-    // મહત્વનો ફેરફાર: અહીં ફક્ત 'command' મોકલવાનો છે, આખો 'systemPrompt' નહીં.
+
     const result = await model.generateContent(command);
     const output = result.response.text().trim();
 
-    // Clean markdown blocks if the model accidentally includes them
+
     const cleanOutput = output.replace(/```json|```/g, "").trim();
 
     try {
