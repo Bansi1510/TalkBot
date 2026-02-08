@@ -72,7 +72,7 @@ export const askToAssistant = async (req: Request, res: Response) => {
     const userName = user.name;
 
     const result = await geminiRes(command, assistantName, userName);
-
+    console.log(result)
     const matchJSON = result.match(/{[\s\S]*}/);
     if (!matchJSON) {
       return res.status(400).json({
@@ -81,6 +81,7 @@ export const askToAssistant = async (req: Request, res: Response) => {
       })
     }
     const ans = JSON.parse(matchJSON[0]);
+    console.log(ans)
     const type = ans.type;
     switch (type) {
       case "get_date": {
@@ -121,7 +122,7 @@ export const askToAssistant = async (req: Request, res: Response) => {
           success: true,
           type,
           userInput: ans.userinput,
-          ans: result
+          ans: ans.response
         });
       }
     }

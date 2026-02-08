@@ -46,9 +46,10 @@ export const updateAssistantAPI = async (formData: FormData): Promise<User | nul
 
 export const askToAssistantAPI = async (command: string): Promise<GeminiResponse | null> => {
   try {
-    const res = await API.post("ask-gemini", command);
+    console.log(command)
+    const res = await API.post("ask-gemini", { command });
     if (res.data.success) {
-      return res.data
+      return res.data;
     } else {
       toast.error(res.data.message);
       return null;

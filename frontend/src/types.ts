@@ -31,3 +31,34 @@ export interface GeminiResponse {
   userInput: string
   ans: string
 }
+
+export interface SpeechRecognitionEvent extends Event {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+export interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start: () => void;
+  stop: () => void;
+  onstart: (() => void) | null;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: Event) => void;
+  onend: () => void;
+}
+
+export interface SpeechRecognitionConstructor {
+  new(): SpeechRecognition;
+}
+export interface SpeechSynthesisConstructor {
+  new(): SpeechSynthesis;
+}
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+    SpeechSynthesis?: SpeechSynthesisConstructor
+  }
+}
