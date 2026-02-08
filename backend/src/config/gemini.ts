@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const geminiRes = async (
   command: string,
@@ -13,7 +13,7 @@ const geminiRes = async (
 
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-  // ⚠️ PROMPT IS 100% UNCHANGED (as requested)
+
   const systemPrompt = `
 You are a smart virtual voice assistant named "${assistantName}", created by "${userName}".
 
@@ -50,9 +50,10 @@ IMPORTANT RULES
    - If the user asks to search on Google or YouTube, keep ONLY the search keywords
 
 3. "response":
-   - Short
-   - Friendly
-   - Spoken style (voice assistant)
+   - DETECT USER LANGUAGE: If the user speaks in Gujarati or Gujlish, respond in Gujarati script. 
+   - If user speaks in Hindi or Hinglish, respond in Hindi script.
+   - Otherwise, respond in English.
+   - Keep it short, friendly, and in a spoken style.
 
 4. If someone asks:
    "Who created you?" or "Who made you?"
@@ -60,30 +61,26 @@ IMPORTANT RULES
 
 5. If the intent is unclear:
    - Use type: "general"
-   - Respond politely
+   - Respond politely in the same language script as the user.
 
 6. NEVER break JSON format
 7. NEVER add extra keys
-8. NEVER return text outside JSON
+8. NEVER return text outside JSON`;
 
--------------------------
-NOW PROCESS THIS INPUT
--------------------------
-User Input: "${command}"`
-
-  // ✅ Configuration to force JSON output
+  // Model configuration
   const model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash-lite",
 
     generationConfig: {
       responseMimeType: "application/json",
+      temperature: 0.7,
     },
-    // ✅ Better to put instructions here than in the main prompt
     systemInstruction: systemPrompt,
   });
+
   try {
-    // Send the systemPrompt (which includes the user command)
-    const result = await model.generateContent(systemPrompt);
+    // મહત્વનો ફેરફાર: અહીં ફક્ત 'command' મોકલવાનો છે, આખો 'systemPrompt' નહીં.
+    const result = await model.generateContent(command);
     const output = result.response.text().trim();
 
     // Clean markdown blocks if the model accidentally includes them
@@ -96,7 +93,7 @@ User Input: "${command}"`
       return JSON.stringify({
         type: "general",
         userinput: command,
-        response: "Sorry, I didn’t understand that.",
+        response: "Something went wrong. Please try again.",
       });
     }
   } catch (error) {
