@@ -14,7 +14,7 @@ export const UserContextProvider: React.FC<UserProviderProps> = ({ children }) =
   useEffect(() => {
     const fetchUser = async () => {
       const res = await getUserAPI();
-      console.log(res)
+
       if (res) {
         setUser(res);
 
@@ -27,7 +27,7 @@ export const UserContextProvider: React.FC<UserProviderProps> = ({ children }) =
   const askToAssistant = async (command: string) => {
 
     const res = await askToAssistantAPI(command);
-    console.log(res)
+
     if (!res) {
       return null;
     }

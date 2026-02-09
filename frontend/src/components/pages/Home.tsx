@@ -7,8 +7,7 @@ import type {
   SpeechRecognitionEvent,
 } from "../../types";
 
-/* ---------- Browser Speech Types ---------- */
-
+/* ---------- Types ---------- */
 type SpeechRecognitionConstructor = new () => SpeechRecognition;
 
 declare global {
@@ -18,7 +17,14 @@ declare global {
   }
 }
 
-/* ---------- Component ---------- */
+type SupportedLang = "en-US" | "hi-IN" | "gu-IN";
+
+/* ---------- Language Detection ---------- */
+const detectLanguage = (text: string): SupportedLang => {
+  if (/[\u0A80-\u0AFF]/.test(text)) return "gu-IN";
+  if (/[\u0900-\u097F]/.test(text)) return "hi-IN";
+  return "en-US";
+};
 
 const Home: React.FC = () => {
   const context = useContext(UserContext);
@@ -32,12 +38,13 @@ const Home: React.FC = () => {
 
   const [transcript, setTranscript] = useState<string>("");
   const [isListening, setIsListening] = useState<boolean>(false);
+  const [hasStarted, setHasStarted] = useState<boolean>(false);
+  const [showHistory, setShowHistory] = useState<boolean>(false);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const isProcessingRef = useRef<boolean>(false);
 
   /* ---------- Logout ---------- */
-
   const handleLogout = (): void => {
     recognitionRef.current?.stop();
     window.speechSynthesis.cancel();
@@ -46,77 +53,71 @@ const Home: React.FC = () => {
   };
 
   /* ---------- Speak ---------- */
-
-  const speak = (text: string): Promise<void> => {
+  const speak = (text: string, lang: SupportedLang): Promise<void> => {
     return new Promise((resolve) => {
       if (!window.speechSynthesis) return resolve();
-
       window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "en-US";
-      utterance.rate = 1;
-      utterance.pitch = 1;
+      utterance.lang = lang;
+
+      const voices = window.speechSynthesis.getVoices();
+      const voice = voices.find(v => v.lang.startsWith(lang.split("-")[0]));
+      if (voice) utterance.voice = voice;
 
       utterance.onend = () => resolve();
-
-      setTimeout(() => {
-        window.speechSynthesis.speak(utterance);
-      }, 150);
+      window.speechSynthesis.speak(utterance);
     });
   };
 
   /* ---------- Handle Commands ---------- */
-
   const handleCommand = (data: GeminiResponse): void => {
     const query = encodeURIComponent(data.userInput);
-    let url = "";
 
-    switch (data.type) {
-      case "youtube_open":
-        url = "https://www.youtube.com";
-        break;
+    const urls: Record<string, string> = {
+      youtube_open: "https://www.youtube.com",
+      youtube_search: `https://www.youtube.com/results?search_query=${query}`,
+      youtube_play: `https://www.youtube.com/results?search_query=${query}`,
+      google_search: `https://www.google.com/search?q=${query}`,
+      calculator_open: "https://www.google.com/search?q=calculator",
+      instagram_open: "https://www.instagram.com",
+      facebook_open: "https://www.facebook.com",
+      weather_show: "https://www.google.com/search?q=weather",
+    };
 
-      case "youtube_search":
-      case "youtube_play":
-        url = `https://www.youtube.com/results?search_query=${query}`;
-        break;
-
-      case "calculator_open":
-        url = "https://www.google.com/search?q=calculator";
-        break;
-
-      case "instagram_open":
-        url = "https://www.instagram.com/";
-        break;
-
-      case "facebook_open":
-        url = "https://www.facebook.com/";
-        break;
-
-      case "weather_show":
-        url = "https://www.google.com/search?q=weather";
-        break;
-
-      default:
-        return;
-    }
-
-    window.open(url, "_blank", "noopener,noreferrer");
+    const url = urls[data.type];
+    if (url) window.open(url, "_blank", "noopener,noreferrer");
   };
 
-  /* ---------- Speech Recognition ---------- */
+  /* ---------- Process Speech ---------- */
+  const processSpeech = async (text: string) => {
+    const assistantName = user?.assistantName?.toLowerCase() || "";
+    if (isProcessingRef.current || !text.toLowerCase().includes(assistantName)) return;
 
-  useEffect(() => {
-    const RecognitionConstructor =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+    try {
+      isProcessingRef.current = true;
+      recognitionRef.current?.stop();
 
-    if (!RecognitionConstructor) {
-      console.error("Speech Recognition not supported");
-      return;
+      const cleanText = text.replace(new RegExp(assistantName, "gi"), "").trim();
+      setTranscript(cleanText);
+
+      const response = await askToAssistant(cleanText);
+      const lang = detectLanguage(response.ans);
+
+      await speak(response.ans, lang);
+      handleCommand(response);
+    } finally {
+      isProcessingRef.current = false;
+      recognitionRef.current?.start();
     }
+  };
 
-    const recognition = new RecognitionConstructor();
+  /* ---------- Speech Init ---------- */
+  const initSpeech = () => {
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Rec) return alert("Speech Recognition not supported");
+
+    const recognition = new Rec();
     recognition.lang = "en-US";
     recognition.continuous = true;
     recognition.interimResults = true;
@@ -124,106 +125,103 @@ const Home: React.FC = () => {
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
 
-    recognition.onresult = async (event: SpeechRecognitionEvent) => {
-      let finalText = "";
-      let interimText = "";
-
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        const speechResult = event.results[i];
-        const text = speechResult[0].transcript;
-
-        if (speechResult.isFinal) {
-          finalText += text;
-        } else {
-          interimText += text;
+        if (event.results[i].isFinal) {
+          processSpeech(event.results[i][0].transcript);
         }
-      }
-
-      setTranscript(finalText || interimText);
-
-      if (!finalText || isProcessingRef.current) return;
-
-      const assistantName = user?.assistantName?.toLowerCase();
-      if (!assistantName) return;
-
-      if (!finalText.toLowerCase().includes(assistantName)) return;
-
-      try {
-        isProcessingRef.current = true;
-
-        recognition.stop();
-
-        const response: GeminiResponse = await askToAssistant(finalText);
-
-        await speak(response.ans);
-        handleCommand(response);
-      } catch (error) {
-        console.error("Assistant error:", error);
-      } finally {
-        isProcessingRef.current = false;
-        recognition.start();
       }
     };
 
     recognitionRef.current = recognition;
     recognition.start();
+    setHasStarted(true);
+  };
 
-    return () => recognition.stop();
-  }, [askToAssistant, user?.assistantName]);
-
-  /* ---------- UI ---------- */
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.stop();
+      window.speechSynthesis.cancel();
+    };
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-blue-950 to-black">
+    <div className="min-h-screen bg-gradient-to-br from-black via-blue-950 to-black text-white relative">
       {/* Top Bar */}
       <div className="flex justify-end gap-3 px-4 pt-4">
         <button
+          onClick={() => setShowHistory(true)}
+          className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition"
+        >
+          History
+        </button>
+        <button
           onClick={() => navigate("/customize")}
-          className="px-4 py-2 rounded-lg text-white bg-blue-600/80 hover:bg-blue-600"
+          className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 transition"
         >
           Customize
         </button>
         <button
           onClick={handleLogout}
-          className="px-4 py-2 rounded-lg text-red-400 border border-red-500/40 hover:bg-red-500/10"
+          className="px-4 py-2 rounded-lg border border-red-500/40 text-red-400 hover:bg-red-500/10 transition"
         >
           Logout
         </button>
       </div>
 
-      {/* Content */}
-      <div className="flex flex-col items-center text-center px-4">
-        {/* Assistant Image */}
-        <div className="mt-10 mb-8">
-          <div className="w-64 h-96 rounded-2xl overflow-hidden border border-blue-700/60 shadow-[0_0_60px_rgba(59,130,246,0.6)]">
-            <img
-              src={user?.assistantImage}
-              alt="Assistant"
-              className="w-full h-full object-cover"
-            />
+      {/* Main */}
+      <div className="flex flex-col items-center mt-10 px-4 text-center">
+        {!hasStarted ? (
+          <>
+            <h2 className="text-2xl mb-6">Ready to talk to {user?.assistantName}?</h2>
+            <button
+              onClick={initSpeech}
+              className="px-8 py-4 bg-blue-500 rounded-full font-bold shadow-lg hover:scale-105 transition"
+            >
+              ENABLE VOICE ASSISTANT
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="w-64 h-96 rounded-2xl overflow-hidden border border-blue-600 shadow-xl mb-6">
+              <img src={user?.assistantImage} className="w-full h-full object-cover" />
+            </div>
+
+            <h1 className="text-3xl font-bold">{user?.assistantName}</h1>
+
+            <p className="mt-4 italic text-gray-300">
+              {transcript || `Say "${user?.assistantName}..."`}
+            </p>
+          </>
+        )}
+      </div>
+
+      {/* History Panel */}
+      {showHistory && (
+        <div className="fixed inset-0 bg-black/60 flex justify-end z-50">
+          <div className="w-full sm:w-96 bg-black border-l border-white/10 p-4 overflow-y-auto">
+            <div className="flex justify-between mb-4">
+              <h3 className="text-lg font-semibold">History</h3>
+              <button onClick={() => setShowHistory(false)}>✕</button>
+            </div>
+
+            {user?.history?.length ? (
+              <ul className="space-y-2">
+                {user.history.map((item: string, i: number) => (
+                  <li
+                    key={i}
+                    className="p-3 rounded-lg bg-white/5 text-sm text-gray-200"
+                  >
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-400 text-sm">No history available</p>
+            )}
           </div>
         </div>
-
-        <h1 className="text-3xl font-bold text-white">
-          {user?.assistantName}
-        </h1>
-
-        <div className="flex items-center gap-2 my-4">
-          <span
-            className={`w-2 h-2 rounded-full ${isListening ? "bg-green-500 animate-ping" : "bg-gray-500"
-              }`}
-          />
-          <p className="text-blue-300 text-xs uppercase">
-            {isListening ? "Listening" : "Mic Off"}
-          </p>
-        </div>
-
-        <div className="w-full max-w-lg p-6 bg-white/5 border border-white/10 rounded-2xl">
-          <p className="text-gray-300 min-h-[1.5em]">
-            {transcript || "Say something…"}
-          </p>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
