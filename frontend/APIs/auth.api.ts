@@ -33,7 +33,7 @@ export const loginAPI = async (email: string, password: string): Promise<User | 
   try {
     const res = await API.post("login", { email, password });
     if (res.data.success) {
-      console.log(res.data);
+
       return res.data.user
     } else {
       toast.error(res.data.message);
