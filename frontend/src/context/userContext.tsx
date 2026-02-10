@@ -1,5 +1,5 @@
 import React, { createContext, useEffect, useState } from "react";
-import type { User, UserContextType, UserProviderProps } from "../types";
+import type { GeminiResponse, User, UserContextType, UserProviderProps } from "../types";
 import { askToAssistantAPI, getUserAPI } from "../../APIs/user.api";
 
 export const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -24,12 +24,17 @@ export const UserContextProvider: React.FC<UserProviderProps> = ({ children }) =
     fetchUser();
   }, []);
 
-  const askToAssistant = async (command: string) => {
+  const askToAssistant = async (command: string): Promise<GeminiResponse> => {
 
     const res = await askToAssistantAPI(command);
 
     if (!res) {
-      return null;
+      return {
+        success: false,
+        type: "error",
+        userInput: command,
+        ans: "No response from Gemini",
+      };
     }
     return res;
   }
