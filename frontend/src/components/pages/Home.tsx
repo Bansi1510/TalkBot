@@ -37,7 +37,7 @@ const Home: React.FC = () => {
   const { user, setUser, askToAssistant } = context;
 
   const [transcript, setTranscript] = useState<string>("");
-  const [isListening, setIsListening] = useState<boolean>(false);
+  const [, setIsListening] = useState<boolean>(false);
   const [hasStarted, setHasStarted] = useState<boolean>(false);
   const [showHistory, setShowHistory] = useState<boolean>(false);
 

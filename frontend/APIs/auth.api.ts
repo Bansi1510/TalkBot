@@ -2,9 +2,9 @@
 import axios, { AxiosError } from "axios";
 import { toast } from "react-toastify";
 import type { User } from "../src/types";
-
+const VITE_API = import.meta.env.VITE_API_URL;
 const API = axios.create({
-  baseURL: `http://localhost:2211/api/auth/`,
+  baseURL: `${VITE_API}/api/auth/`,
   withCredentials: true
 })
 

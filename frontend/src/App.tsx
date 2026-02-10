@@ -14,7 +14,7 @@ const App: React.FC = () => {
   if (!context) {
     throw new Error('App must be used within UserContext provider');
   }
-  const { user, setUser } = context;
+  const { user } = context;
 
 
   return (
