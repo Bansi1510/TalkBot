@@ -11,10 +11,16 @@ import userRouter from "./routes/user.routes.js";
 dotenv.config();
 
 const app = express();
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://your-frontend.onrender.com"
+];
+
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: allowedOrigins,
   credentials: true
 }));
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
@@ -22,11 +28,20 @@ app.use(cookieParser());
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter)
 
-const PORT: number = Number(process.env.PORT)
+const PORT: number = Number(process.env.PORT) || 5000;
 
-app.listen(PORT, () => {
-  connectDB();
-  console.log("sever start on port no ", PORT)
-})
+const startServer = async () => {
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("❌ DB connection failed", error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 
