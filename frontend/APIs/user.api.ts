@@ -2,8 +2,10 @@
 import axios, { AxiosError } from "axios";
 import { toast } from "react-toastify";
 import type { GeminiResponse, User } from "../src/types"
+const VITE_API = import.meta.env.VITE_API_URL;
+
 const API = axios.create({
-  baseURL: `http://localhost:2211/api/user/`,
+  baseURL: `${VITE_API}/api/user/`,
   withCredentials: true
 })
 
