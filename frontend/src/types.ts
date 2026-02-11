@@ -41,6 +41,7 @@ export interface SpeechRecognition extends EventTarget {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
+  maxAlternatives: number
   start: () => void;
   stop: () => void;
   onstart: (() => void) | null;
