@@ -6,7 +6,7 @@ import { genToken } from "../config/token.js";
 
 export const signUp = async (req: Request, res: Response) => {
   try {
-
+    console.log("hello")
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
       return res.status(401).json({
