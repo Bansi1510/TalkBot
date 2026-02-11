@@ -37,12 +37,15 @@ export const signUp = async (req: Request, res: Response) => {
 
     const token = await genToken(user._id);
 
+    const isProduction = process.env.NODE_ENV === "production";
+
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      sameSite: "strict",
-      secure: false
-    })
+      sameSite: isProduction ? "none" : "lax",
+      secure: isProduction
+    });
+
     res.status(200).json({
       success: true,
       user
@@ -80,12 +83,15 @@ export const login = async (req: Request, res: Response) => {
     }
     const token = await genToken(user._id);
 
+    const isProduction = process.env.NODE_ENV === "production";
+
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      sameSite: "strict",
-      secure: false
-    })
+      sameSite: isProduction ? "none" : "lax",
+      secure: isProduction
+    });
+
     res.status(200).json({
       success: true,
       user
