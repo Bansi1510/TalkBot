@@ -17,12 +17,13 @@ const InputName: React.FC = () => {
     setAssistantName,
     selectedImage,
     uploadedFile,
-    setUser
+    setUser,
+    user
   } = context;
 
   const handleContinue = async () => {
     if (!name || !selectedImage) return;
-
+    console.log(user)
     setAssistantName(name);
 
     const formData = new FormData();
