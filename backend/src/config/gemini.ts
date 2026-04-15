@@ -14,7 +14,7 @@ const geminiRes = async (
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 
-  const systemPrompt = `You are a smart virtual voice assistant named "{assistantName}", created by "{userName}".
+  const systemPrompt = `You are a smart virtual voice assistant named ${assistantName}, created by ${userName}.
 
 You are NOT Google.
 You are a voice-enabled AI assistant for a web application.

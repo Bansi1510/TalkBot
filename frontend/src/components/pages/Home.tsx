@@ -7,7 +7,6 @@ import type {
   SpeechRecognitionEvent,
 } from "../../types";
 
-/* ---------- Types ---------- */
 type SpeechRecognitionConstructor = new () => SpeechRecognition;
 
 declare global {
@@ -36,16 +35,21 @@ const Home: React.FC = () => {
 
   const { user, setUser, askToAssistant } = context;
 
-  const [transcript, setTranscript] = useState<string>("");
-  const [hasStarted, setHasStarted] = useState<boolean>(false);
-  const [showHistory, setShowHistory] = useState<boolean>(false);
+  const [transcript, setTranscript] = useState("");
+  const [hasStarted, setHasStarted] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const isProcessingRef = useRef<boolean>(false);
-  const isSpeakingRef = useRef<boolean>(false);
+  const isProcessingRef = useRef(false);
+  const isSpeakingRef = useRef(false);
+
+  /* ---------- Fix voices ---------- */
+  useEffect(() => {
+    window.speechSynthesis.onvoiceschanged = () => { };
+  }, []);
 
   /* ---------- Logout ---------- */
-  const handleLogout = (): void => {
+  const handleLogout = () => {
     recognitionRef.current?.stop();
     window.speechSynthesis.cancel();
     setUser(null);
@@ -53,8 +57,8 @@ const Home: React.FC = () => {
   };
 
   /* ---------- Speak ---------- */
-  const speak = (text: string, lang: SupportedLang): Promise<void> => {
-    return new Promise((resolve) => {
+  const speak = (text: string, lang: SupportedLang) => {
+    return new Promise<void>((resolve) => {
       if (!window.speechSynthesis) return resolve();
 
       window.speechSynthesis.cancel();
@@ -71,7 +75,7 @@ const Home: React.FC = () => {
 
       utterance.onend = () => {
         isSpeakingRef.current = false;
-        recognitionRef.current?.start(); // restart after speaking
+        setTimeout(() => recognitionRef.current?.start(), 500);
         resolve();
       };
 
@@ -80,7 +84,7 @@ const Home: React.FC = () => {
   };
 
   /* ---------- Handle Commands ---------- */
-  const handleCommand = (data: GeminiResponse): void => {
+  const handleCommand = (data: GeminiResponse) => {
     const query = encodeURIComponent(data.userInput);
 
     const urls: Record<string, string> = {
@@ -99,39 +103,26 @@ const Home: React.FC = () => {
   };
 
   /* ---------- Process Speech ---------- */
-  const processSpeech = async (text: string): Promise<void> => {
-    const assistantName = user?.assistantName?.toLowerCase() || "";
-
-    if (
-      isProcessingRef.current ||
-      isSpeakingRef.current ||
-      !text.toLowerCase().includes(assistantName)
-    )
-      return;
+  const processSpeech = async (text: string) => {
+    if (isProcessingRef.current || isSpeakingRef.current) return;
 
     try {
       isProcessingRef.current = true;
       recognitionRef.current?.stop();
 
-      const cleanText = text
-        .replace(new RegExp(assistantName, "gi"), "")
-        .trim();
+      setTranscript(text);
 
-      setTranscript(cleanText);
-
-      const response = await askToAssistant(cleanText);
+      const response = await askToAssistant(text);
       const lang = detectLanguage(response.ans);
 
       await speak(response.ans, lang);
       handleCommand(response);
 
-      // Add to history
       if (user) {
-        const updatedUser = {
+        setUser({
           ...user,
-          history: [...(user.history || []), response.ans], // only string
-        };
-        setUser(updatedUser);
+          history: [...(user.history || []), response.ans],
+        });
       }
     } catch (error) {
       console.error("Processing error:", error);
@@ -140,7 +131,7 @@ const Home: React.FC = () => {
     }
   };
 
-  /* ---------- Speech Init (ONLY ONCE) ---------- */
+  /* ---------- Speech Init ---------- */
   useEffect(() => {
     const Rec =
       window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -149,9 +140,10 @@ const Home: React.FC = () => {
 
     const recognition = new Rec();
     recognition.lang = "en-US";
-    recognition.continuous = true; // VERY IMPORTANT
-    recognition.interimResults = false; // more stable on mobile
-    recognition.maxAlternatives = 1;
+    recognition.continuous = true;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => console.log("🎤 Mic started");
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -166,9 +158,8 @@ const Home: React.FC = () => {
     };
 
     recognition.onend = () => {
-      // Mobile auto-stop fix
       if (!isSpeakingRef.current && hasStarted) {
-        recognition.start();
+        setTimeout(() => recognition.start(), 500);
       }
     };
 
@@ -178,16 +169,20 @@ const Home: React.FC = () => {
       recognition.stop();
       window.speechSynthesis.cancel();
     };
-  }, [hasStarted]);
+  }, []);
 
-  const initSpeech = (): void => {
+  const initSpeech = () => {
     if (!recognitionRef.current) {
       alert("Speech Recognition not supported");
       return;
     }
 
-    recognitionRef.current.start();
-    setHasStarted(true);
+    try {
+      recognitionRef.current.start();
+      setHasStarted(true);
+    } catch {
+      console.log("Already running");
+    }
   };
 
   return (
@@ -243,13 +238,13 @@ const Home: React.FC = () => {
             </h1>
 
             <p className="mt-4 italic text-gray-300">
-              {transcript || `Say "${user?.assistantName}..."`}
+              {transcript || `Say something...`}
             </p>
           </>
         )}
       </div>
 
-      {/* ---------- History Modal ---------- */}
+      {/* History Modal */}
       {showHistory && (
         <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
           <div className="bg-gray-900 p-6 rounded-xl w-96 max-h-[80vh] overflow-y-auto">
@@ -258,28 +253,24 @@ const Home: React.FC = () => {
             {user?.history?.length ? (
               <ul className="space-y-2">
                 {user.history.map((entry, index) => (
-                  <li
-                    key={index}
-                    className="border-b border-gray-700 pb-2 text-gray-300"
-                  >
+                  <li key={index} className="border-b border-gray-700 pb-2">
                     {entry}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-400">No history yet.</p>
+              <p>No history yet.</p>
             )}
 
             <button
               onClick={() => setShowHistory(false)}
-              className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition"
+              className="mt-4 px-4 py-2 bg-blue-600 rounded-lg"
             >
               Close
             </button>
           </div>
         </div>
       )}
-
     </div>
   );
 };
